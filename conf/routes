@@ -10,7 +10,6 @@ module:testrunner
 GET     /                                       App.Index
 POST    /brainees/new                           Brainees.NewBrainee
 GET     /brainees/:id                           Brainees.GetBraineeByID
-GET     /cache/                                 Cache.Index
 
 # Ignore favicon requests
 GET     /favicon.ico                            404

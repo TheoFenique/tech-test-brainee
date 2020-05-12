@@ -3,9 +3,7 @@
 revel run myapp
 ```
 
-## Temps pris: (11 mai, 14h)
-- 35min pour lire la doc
-- 1h pour le code
+J'ai pris environ 3h30-4h pour lire la doc / faire le code
 
 
    

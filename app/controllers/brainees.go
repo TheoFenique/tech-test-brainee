@@ -4,8 +4,8 @@ import (
 	"github.com/revel/revel"
 	"github.com/revel/revel/cache"
 	"time"
-	"fmt"
 	"strconv"
+	"techTest/app/models"
 )
 
 type Brainees struct {
@@ -18,42 +18,17 @@ type NewBraineeReq struct {
    Brand string `json: "brand"`
 }
 
-type FullBrainees struct {
-	ID int
-	Text string
-   	Author string
-   	Brand string
-}
-
 // NewBrainee adds a brainee in the cache
 func (c Brainees) NewBrainee() revel.Result {
 	var reqData NewBraineeReq
     c.Params.BindJSON(&reqData)
-	fmt.Println(reqData)
 
-	var inCacheBrainees []FullBrainees
-
-	if err := cache.Get("brainees", &inCacheBrainees); err != nil {
-		var newCache = []FullBrainees{
-			FullBrainees{
-				ID: 0,
-				Text: reqData.Text,
-				Author: reqData.Author,
-				Brand: reqData.Brand,
-			},
-		}
-		cache.Set("brainees", newCache, 30*time.Minute)
-	} else {
-		fullNewBrainee := FullBrainees{
-			ID: len(inCacheBrainees),
-			Text: reqData.Text,
-			Author: reqData.Author,
-			Brand: reqData.Brand,
-		}
-		inCacheBrainees = append(inCacheBrainees, fullNewBrainee)
-		fmt.Println(inCacheBrainees)
-		cache.Set("brainees", inCacheBrainees, 30*time.Minute)
+	_, err := models.PostBrainee(reqData.Author, reqData.Text, reqData.Brand)
+	if err != nil {
+		c.Response.Status = 500
+		return c.RenderJSON("Error")
 	}
+
 	return c.RenderJSON("OK")
 }
 
@@ -65,18 +40,28 @@ func (c Brainees) GetBraineeByID() revel.Result{
 		return c.RenderJSON("Error, the id is not valid")
 	}
 
-	var inCacheBrainees []FullBrainees
+	var inCacheBrainees []models.Brainee
 	
-	if errCache := cache.Get("brainees", &inCacheBrainees); errCache != nil {
-		c.Response.Status = 500
-	return c.RenderJSON("Can't get cache")
-	} else {
+	if errCache := cache.Get("brainees", &inCacheBrainees); errCache == nil {
 		for _, brainee := range inCacheBrainees {
 			if (brainee.ID == reqData) {
 				return c.RenderJSON(brainee)
-			}
+			} 
 		}
+	} 
+
+	dbBrainee, err := models.FindBrainee(reqData)
+	if err != nil {
+		c.Response.Status = 500
+		return c.RenderJSON(err)
+	} else {
+		inCacheBrainees = append(inCacheBrainees, dbBrainee)
+		cache.Set("brainees", inCacheBrainees, 30*time.Minute)
+		
+		return c.RenderJSON(dbBrainee)
 	}
+
+	
 	c.Response.Status = 500
 	return c.RenderJSON("Can't find any brainee with this ID")
-}//
+}
